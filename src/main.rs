@@ -1,21 +1,19 @@
 use std::fs;
 use std::io;
-use std::io::Read;
-
-fn get_file() -> fs::File {
-    return match fs::File::open("ranking.txt") {
-        Ok(file) => file,
-        Err(_) => {
-            return fs::File::create("ranking.txt").expect("Failed creating file");
-        }
-    };
-}
+use std::io::prelude::*;
 
 fn main() {
-    let mut stored_movies_file = get_file();
+    let mut stored_movies_file = fs::OpenOptions::new()
+        .append(true)
+        .read(true)
+        .write(true)
+        .create(true)
+        .append(true)
+        .open("ranking.txt")
+        .expect("Failed opening file");
 
-    let mut movies_file_as_string = String::new();
-    let _ = stored_movies_file.read_to_string(&mut movies_file_as_string);
+    let movies_file_as_string =
+        fs::read_to_string("ranking.txt").expect("Failed to read as string");
 
     let mut movies: Vec<String> = movies_file_as_string
         .split('\n')
@@ -40,7 +38,7 @@ fn main() {
             target = left + (right - left) / 2;
             // println!("left {left} right {right} target {target}");
             let movie_compare = movies[target].clone();
-            println!("Is {movie} better than {movie_compare}:");
+            println!("Is {movie} better than {movie_compare} (yes or no):");
             let mut is_better = String::new();
             io::stdin()
                 .read_line(&mut is_better)
@@ -57,6 +55,17 @@ fn main() {
             }
         }
         movies.insert(target, movie);
+
+        // stored_movies_file.write(b"").expect("Failed clearing file");
+        stored_movies_file.set_len(0).expect("Failed clearing file");
+
+        for m in movies.clone() {
+            let mut mv = m.into_bytes();
+            let mut te = "\n".to_string().into_bytes();
+            mv.append(&mut te);
+            stored_movies_file.write_all(&mv).expect("failed write");
+        }
+
         println!("{movies:?}");
     }
 }
