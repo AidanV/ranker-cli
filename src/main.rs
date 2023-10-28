@@ -1,16 +1,7 @@
 use std::fs;
 use std::io;
-use std::io::prelude::*;
 
 fn main() {
-    let mut stored_movies_file = fs::OpenOptions::new()
-        .append(true)
-        .read(true)
-        .write(true)
-        .create(true)
-        .append(true)
-        .open("ranking.txt")
-        .expect("Failed opening file");
 
     let movies_file_as_string =
         fs::read_to_string("ranking.txt").expect("Failed to read as string");
@@ -56,15 +47,7 @@ fn main() {
         }
         movies.insert(target, movie);
 
-        // stored_movies_file.write(b"").expect("Failed clearing file");
-        stored_movies_file.set_len(0).expect("Failed clearing file");
-
-        for m in movies.clone() {
-            let mut mv = m.into_bytes();
-            let mut te = "\n".to_string().into_bytes();
-            mv.append(&mut te);
-            stored_movies_file.write_all(&mv).expect("failed write");
-        }
+        fs::write("ranking.txt", movies.join("\n")).expect("failed to write");
 
         println!("{movies:?}");
     }
