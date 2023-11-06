@@ -34,40 +34,94 @@ struct Movie {
     name: String,
     id: usize,
 }
+#[derive(Clone)]
+struct Find {
+    left: usize,
+    right: usize,
+    target: usize,
+}
 
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    let (movie, set_movie) = create_signal("".to_string());
-    let (movies, set_movies) = create_signal(Vec::new());
+    let (movie, set_movie) = create_signal(Movie {
+        name: "".to_string(),
+        id: 0,
+    });
+    let (movies, set_movies) = create_signal(Vec::<Movie>::new());
+    let (is_ranking, set_is_ranking) = create_signal(false);
+    let (find, set_find) = create_signal(Find {
+        left: 0,
+        right: 0,
+        target: 0,
+    });
     let add_movie = move |_| {
-        let m: Movie = Movie {
-            name: movie.get(),
-            id: movies.get().len(),
-        };
-        set_movies.update(|movies| movies.push(m));
+        if movies.get().len() == 0 {
+            log!("movies was 0");
+            set_movies.update(|movies| movies.push(movie.get()));
+        } else {
+            log!("{}", movies.get()[0].name);
+            set_is_ranking(true);
+        }
+    };
+    let up_movie = move |_| {
+        set_find.update(|f| {
+            f.left = 0;
+            f.right = 0; // movies.get().len() - 1;
+            f.target = f.left + (f.right - f.left) / 2;
+        });
+        let f = find.get();
+        if f.left > f.right {
+            set_movies.update(|movies| movies.push(movie.get()));
+            set_is_ranking(false);
+        }
     };
 
     view! {
         <h1>"Welcome to Leptos!"</h1>
         <input on:input=move |ev|{
-            set_movie(event_target_value(&ev));
+            set_movie(
+                Movie {name: event_target_value(&ev), id: movies.get().len()}
+            );//(Movie {name: event_target_value(&ev), id: 0});
         }></input>
-        <button on:click=add_movie>"Click Me: "  {movie}</button>
+        <button on:click=add_movie>"Click Me: "  {movie.get().name.clone()}</button>
         <For
             each = movies
-            key = |movie| movie.id
+            key = |movie| movie.id.clone()
             children = move |m| {
                 view!{
-                    <p>{m.name}</p>
+                    <p>{m.name.clone()}</p>
                 }
             }
         />
+        // <Rank should_rank=&move || is_ranking()/>
+        <div>{move || if is_ranking() {
+            view!{
+                <div>
+                <p>{if movies.get().len() > 0 {movies.get()[find.get().target].name.clone()} else {"hi".to_string()}}</p>
+                <button on:click=up_movie>Up</button>
+                <button>Down</button>
+                </div>
+            }
+        } else {
+            view!{
+                <div></div>
+            }
+        }}</div>
     }
 }
 
 #[component]
-fn MovieList() -> impl IntoView {
+fn Rank(should_rank: &'static dyn Fn() -> bool) -> impl IntoView {
+    if should_rank() {
+        view! {
+            <p>testing</p>
+        }
+    } else {
+        view! {
+        <p>tested</p>
+        }
+    }
     // return view! {<text> test </text>};
     // let movies = use_context::<ReadSignal<Vec<String>>>().expect("failed context");
     // return view! { each=movies
