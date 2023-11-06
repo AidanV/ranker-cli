@@ -1,6 +1,8 @@
+use leptos::logging::log;
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
+use std::clone::Clone;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -27,36 +29,24 @@ pub fn App() -> impl IntoView {
     }
 }
 
+#[derive(Clone)]
+struct Movie {
+    name: String,
+    id: usize,
+}
+
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    // let (count, set_count) = create_signal(0);
-    // let on_click = move |_| set_count.update(|count| *count += 1);
     let (movie, set_movie) = create_signal("".to_string());
-    let initial_length = 1;
-    let initial_movies = (0..initial_length)
-        .map(|id| (id, create_signal(id + 1)))
-        .collect::<Vec<_>>();
-    let (movies, set_movies) = create_signal(initial_movies);
-    let mut next_counter_id = initial_length;
+    let (movies, set_movies) = create_signal(Vec::new());
     let add_movie = move |_| {
-        let sig = create_signal(next_counter_id + 1);
-        set_movies.update(move |movies| {
-            movies.push((next_counter_id, sig));
-        });
-        next_counter_id += 1;
+        let m: Movie = Movie {
+            name: movie.get(),
+            id: movies.get().len(),
+        };
+        set_movies.update(|movies| movies.push(m));
     };
-    // fn store(movies: Vec<String>, movie: String?) {
-    //     movies.push(movie);
-    //     for movie in movies.clone() {
-    //         leptos::logging::log!("{movie}");
-    //     }
-    // }
-    // let test = move |_| add_movie;
-    // let counters = (1..=length).map(|idx| create_signal(idx));
-
-    // provide_context(movies);
 
     view! {
         <h1>"Welcome to Leptos!"</h1>
@@ -64,6 +54,15 @@ fn HomePage() -> impl IntoView {
             set_movie(event_target_value(&ev));
         }></input>
         <button on:click=add_movie>"Click Me: "  {movie}</button>
+        <For
+            each = movies
+            key = |movie| movie.id
+            children = move |m| {
+                view!{
+                    <p>{m.name}</p>
+                }
+            }
+        />
     }
 }
 
