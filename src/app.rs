@@ -34,11 +34,11 @@ struct Movie {
     name: String,
     id: usize,
 }
+
 #[derive(Clone)]
 struct Find {
     left: usize,
     right: usize,
-    target: usize,
 }
 
 /// Renders the home page of your application.
@@ -50,14 +50,10 @@ fn HomePage() -> impl IntoView {
     });
     let (movies, set_movies) = create_signal(Vec::<Movie>::new());
     let (is_ranking, set_is_ranking) = create_signal(false);
-    let (find, set_find) = create_signal(Find {
-        left: 0,
-        right: 0,
-        target: 0,
-    });
+    let (find, set_find) = create_signal(Find { left: 0, right: 0 });
     let add_movie = move |_| {
         if movies.get().len() == 0 {
-            log!("movies was 0");
+            log!("movies was 0 {}", movie.get().name);
             set_movies.update(|movies| movies.push(movie.get()));
         } else {
             log!("{}", movies.get()[0].name);
@@ -65,26 +61,74 @@ fn HomePage() -> impl IntoView {
         }
     };
     let up_movie = move |_| {
-        set_find.update(|f| {
-            f.left = 0;
-            f.right = 0; // movies.get().len() - 1;
-            f.target = f.left + (f.right - f.left) / 2;
-        });
-        let f = find.get();
-        if f.left > f.right {
-            set_movies.update(|movies| movies.push(movie.get()));
+        log!("movie: {}", movie.get().name);
+        // set_find.update(|f| {
+        //     f.left = 0;
+        //     f.right = movies.get().len() - 1;
+        //     f.target = f.left + (f.right - f.left) / 2;
+        // });
+        let Find {
+            left: mut l,
+            right: r,
+        } = find.get();
+        if l > r {
+            set_movies.update(|movies| movies.insert(movies.len() - l, movie.get()));
             set_is_ranking(false);
+            set_find(Find {
+                left: 0,
+                right: movies.get().len() - 1,
+            });
+            return;
         }
+        let t = l + (r - l) / 2;
+        log!("l{} r{} t{}", l, r, t);
+        if l == r {
+            l += 1;
+        } else {
+            l = t + 1;
+        }
+        set_find(Find { left: l, right: r });
     };
 
+    let down_movie = move |_| {
+        log!("movie: {}", movie.get().name);
+        // set_find.update(|f| {
+        //     f.left = 0;
+        //     f.right = movies.get().len() - 1;
+        //     f.target = f.left + (f.right - f.left) / 2;
+        // });
+        let Find {
+            left: mut l,
+            right: mut r,
+        } = find.get();
+        if l > r {
+            set_movies.update(|movies| movies.insert(movies.len() - l, movie.get()));
+            set_is_ranking(false);
+            set_find(Find {
+                left: 0,
+                right: movies.get().len() - 1,
+            });
+            return;
+        }
+        let t = l + (r - l) / 2;
+        log!("l{} r{} t{}", l, r, t);
+        if l == r {
+            l += 1;
+        } else {
+            r = t;
+        }
+        set_find(Find { left: l, right: r });
+    };
     view! {
         <h1>"Welcome to Leptos!"</h1>
         <input on:input=move |ev|{
-            set_movie(
+            set_movie({
+                log!("set movie");
                 Movie {name: event_target_value(&ev), id: movies.get().len()}
+            }
             );//(Movie {name: event_target_value(&ev), id: 0});
         }></input>
-        <button on:click=add_movie>"Click Me: "  {movie.get().name.clone()}</button>
+        <button on:click=add_movie>"Click Me:"{movie.get().name}</button>
         <For
             each = movies
             key = |movie| movie.id.clone()
@@ -98,9 +142,9 @@ fn HomePage() -> impl IntoView {
         <div>{move || if is_ranking() {
             view!{
                 <div>
-                <p>{if movies.get().len() > 0 {movies.get()[find.get().target].name.clone()} else {"hi".to_string()}}</p>
+                // <p>{if movies.get().len() > 0 {movies.get()[find.get().left].name.clone()} else {"hi".to_string()}}</p>
                 <button on:click=up_movie>Up</button>
-                <button>Down</button>
+                <button on:click=down_movie>Down</button>
                 </div>
             }
         } else {
