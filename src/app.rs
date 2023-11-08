@@ -3,7 +3,12 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 use std::clone::Clone;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
+fn get_id() -> usize {
+    static COUNTER: AtomicUsize = AtomicUsize::new(1);
+    COUNTER.fetch_add(1, Ordering::Relaxed)
+}
 #[component]
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
@@ -105,6 +110,9 @@ fn HomePage() -> impl IntoView {
         set_find(Find { left: l, right: r });
     };
 
+    let delete_movie =
+        move |_, movie_id| set_movies.update(|movies| movies.retain(|m| m.id != movie_id));
+
     view! {
         <p>{move || match compare.get() {
                     Option::Some(t) => movies.get()[movies.get().len() - 1 - t].name.clone(),
@@ -112,7 +120,7 @@ fn HomePage() -> impl IntoView {
                 }}</p>
         <input on:input=move |ev|{
             set_movie({
-                Movie {name: event_target_value(&ev), id: movies.get().len()}
+                Movie {name: event_target_value(&ev), id: get_id()}
             }
             );
         }></input>
@@ -122,7 +130,10 @@ fn HomePage() -> impl IntoView {
             key = |movie| movie.id.clone()
             children = move |m| {
                 view!{
+                    <div style="flex-direction: row;display: flex;justify-content: space-around;">
                     <p>{m.name.clone()}</p>
+                    <button on:click=move |ev| delete_movie(ev, m.id)>delete</button>
+                    </div>
                 }
             }
         />
