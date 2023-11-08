@@ -50,7 +50,7 @@ struct Find {
 #[component]
 fn HomePage() -> impl IntoView {
     let (movie, set_movie) = create_signal(Movie {
-        name: "".to_string(),
+        name: String::new(),
         id: 0,
     });
     let (movies, set_movies) = create_signal(Vec::<Movie>::new());
@@ -58,7 +58,7 @@ fn HomePage() -> impl IntoView {
     let (find, set_find) = create_signal(Find { left: 0, right: 0 });
     let (compare, set_compare) = create_signal(Option::None::<usize>);
     let add_movie = move |_| {
-        if movies.get().len() == 0 {
+        if movies.get().is_empty() {
             set_movies.update(|movies| movies.push(movie.get()));
         } else {
             set_compare(Some(movies.get().len() / 2));
@@ -127,7 +127,7 @@ fn HomePage() -> impl IntoView {
         <button on:click=add_movie>"Click Me"</button>
         <For
             each = movies
-            key = |movie| movie.id.clone()
+            key = |movie| movie.id
             children = move |m| {
                 view!{
                     <div style="flex-direction: row;display: flex;justify-content: space-around;">
